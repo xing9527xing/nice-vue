@@ -4,8 +4,9 @@
     ref="tagSelectRef"
     v-model="valueSelf"
     placeholder="请输入或选择标签"
-    multiple
     async
+    v-bind="$attrs"
+    :normalizer="normalizer"
     :default-options="true"
     :load-options="loadTagsOptions"
     :clear-on-select="clearOnSelect"
@@ -34,7 +35,7 @@ export default {
   props: {
     //选择的数据项
     value: {
-      type: Array,
+      type: [Array,String],
     },
     //已有的数据项
     allTags: {
@@ -62,6 +63,9 @@ export default {
         this.$emit("change", newValue);
       }
     },
+    value() {
+      this.valueSelf = this.value;
+    }
   },
   methods: {
     //异步加载标签
@@ -73,7 +77,7 @@ export default {
         if (searchQuery.trim() === "") {
           options = this.allTags;
         }
-        //2. 不为空，则生成新标签 + 过滤已有标签
+        // 2. 不为空，则生成新标签 + 过滤已有标签
         else {
           //2.1 过滤已有标签
           this.allTags.forEach((x) => {
@@ -94,6 +98,13 @@ export default {
         }
         //3. 回传
         callback(null, options);
+      }
+    },
+    normalizer(node) {
+      return {
+        id: node.Id,
+        label: node.Name,
+        children: node.Children
       }
     },
     //选择菜单项后强行清空搜索字符串
