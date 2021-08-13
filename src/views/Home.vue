@@ -1,8 +1,7 @@
 <template>
   <div>
-    <div style="position: fixed; top: 10px; left: 10px; z-index: 2">
+    <div style="position: fixed; top: 10px; left: 100px; z-index: 2">
       <button @click="saveLayout">保存</button>
-      <button @click="addLayoutItem">添加</button>
     </div>
     <div id="wrapper" class="wrapper">
       <div
@@ -23,6 +22,7 @@
       </div>
       <grid-layout
         id="kk"
+        ref="gridlayout"
         :layout.sync="layout"
         :col-num="colNum"
         :row-height="rowHeight"
@@ -42,13 +42,36 @@
           :h="item.h"
           :i="item.i"
           :key="item.i"
-          @resized="resizedEvent"
-          @moved="resizedEvent"
         >
-          <component class="item-content" v-bind:is="item.code"></component>
-          <!-- <div class="item-content">{{ item.i }}</div> -->
+          <component
+            style="backgound: yellow"
+            :ref="item.code"
+            class="item-content"
+            v-bind:is="item.code"
+          ></component>
         </grid-item>
       </grid-layout>
+    </div>
+    <div class="panal-list">
+      <div
+        v-for="item in series"
+        :key="item.name"
+        @drag="drag(item)"
+        @dragend="dragend(item)"
+        draggable="true"
+        unselectable="on"
+      >
+        <div>
+          <img
+            :src="require(`@/assets/${item.image}.jpg`)"
+            style="object-fit: contain; width: 100%"
+            class="image"
+          />
+        </div>
+        <div style="padding: 14px">
+          <span>{{ item.name }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -56,69 +79,182 @@
 <script>
 import VueGridLayout from "vue-grid-layout";
 import _ from "lodash";
-import safe from '@/components/layoutComponents/safe.vue'
-import construction from '@/components/layoutComponents/construction.vue'
+import safe from "@/components/layoutComponents/safe.vue";
+import construction from "@/components/layoutComponents/construction.vue";
 const wrapperH = 720;
+
+let mouseXY = { x: null, y: null };
+let DragPos = { x: null, y: null, w: 1, h: 1, i: null };
 // const wrapperW = 960
 export default {
   data() {
     return {
       layout: [
-        { x: 0, y: 0, w: 5, h: 10, i: "0",code: 'safe' },
-        { x: 2, y: 0, w: 10, h: 30, i: "1",code: 'construction' },
-        // { x: 4, y: 0, w: 2, h: 10, i: "2" },
-        // { x: 6, y: 0, w: 2, h: 10, i: "3" },
-        // { x: 8, y: 0, w: 2, h: 10, i: "4" },
-        // { x: 10, y: 0, w: 2, h: 10, i: "5" },
-        // { x: 0, y: 0, w: 2, h: 5, i: "6" },
-        // { x: 2, y: 5, w: 2, h: 5, i: "7" },
-        // { x: 4, y: 0, w: 2, h: 5, i: "8" },
-        // { x: 6, y: 0, w: 2, h: 4, i: "9" },
+        // { code: "safe", h: 44, i: "0", moved: false, w: 18, x: 13, y: 15 },
+        // { code: "construction", h: 27, i: "1", moved: false, w: 6, x: 5, y: 6 },
+        // { h: 27, i: "1", moved: false, w: 6, x: 5, y: 6 },
+        // { h: 27, i: "2", moved: false, w: 6, x: 5, y: 6 },
+        // { h: 27, i: "3", moved: false, w: 6, x: 5, y: 6 },
+        // { h: 27, i: "4", moved: false, w: 6, x: 5, y: 6 },
+      ],
+      series: [
+        { code: "safe", name: "安全", image: 2 },
+        { code: "construction", name: "施工", image: 1 },
       ],
       lastLayout: "",
       rowHeight: 10,
       maxRows: 72,
       layoutCopy: [],
       colNum: 40,
-      code: 'safe'
+      dragingItem: {},
     };
   },
   components: {
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
     safe,
-    construction
+    construction,
   },
   mounted() {
     // this.maxRows = 540 / this.rowHeight
     this.layoutCopy = _.cloneDeep(this.layout);
+    document.addEventListener(
+      "dragover",
+      function (e) {
+        mouseXY.x = e.clientX;
+        mouseXY.y = e.clientY;
+      },
+      false
+    );
   },
   methods: {
-    saveLayout() {
-      localStorage.setItem("layout", JSON.stringify(this.layout));
+    layoutUpdatedEvent() {
+      // console.log('layoutUpdatedEventlayoutUpdatedEvent');
     },
-    resizedEvent() {
-      console.log("resizedEvent");
+    saveLayout() {
       const height = document.querySelector("#kk").offsetHeight;
       if (height > wrapperH) {
-        console.log("超出了");
-        this.layout = _.cloneDeep(this.layoutCopy);
+        // this.layout = _.cloneDeep(this.layoutCopy);
+        this.$message("内容不可超出边框区域");
       } else {
-        console.log("没有超出");
         this.layoutCopy = _.cloneDeep(this.layout);
+        console.log("不超出");
+        localStorage.setItem("layout", JSON.stringify(this.layout));
       }
     },
-    addLayoutItem() {
-      this.layout.push({
-        // x: (this.layout.length * 2) % (this.colNum),
-        // y: this.layout.length + (this.colNum), // puts it at the bottom
-        x: this.colNum - 2,
-        y: this.layout.length + (this.colNum),
-        w: 2,
-        h: 2,
-        i: this.index,
-        code: this.code
-      });
+    // resizedEvent() {
+    //   const height = document.querySelector("#kk").offsetHeight;
+    //   if (height > wrapperH) {
+    //     this.layout = _.cloneDeep(this.layoutCopy);
+    //     console.log('超出');
+    //   } else {
+    //     this.layoutCopy = _.cloneDeep(this.layout);
+    //     console.log('不超出');
+    //   }
+    // },
+    drag: function (item) {
+      let parentRect = document
+        .getElementById("wrapper")
+        .getBoundingClientRect();
+      let mouseInGrid = false;
+      if (
+        mouseXY.x > parentRect.left &&
+        mouseXY.x < parentRect.right &&
+        mouseXY.y > parentRect.top &&
+        mouseXY.y < parentRect.bottom
+      ) {
+        mouseInGrid = true;
+      }
+      if (
+        mouseInGrid === true &&
+        this.layout.findIndex((item) => item.i === "drop") === -1
+      ) {
+        this.layout.push({
+          x: (this.layout.length * 2) % (this.colNum || 12),
+          y: this.layout.length + (this.colNum || 12), // puts it at the bottom
+          w: 5,
+          h: 10,
+          i: "drop",
+          code: item.code,
+        });
+      }
+      let index = this.layout.findIndex((item) => item.i === "drop");
+      if (index !== -1) {
+        let el = this.$refs.gridlayout.$children[index];
+        el.dragging = {
+          top: mouseXY.y - parentRect.top,
+          left: mouseXY.x - parentRect.left,
+        };
+        let new_pos = el.calcXY(
+          mouseXY.y - parentRect.top,
+          mouseXY.x - parentRect.left
+        );
+        if (mouseInGrid === true) {
+          this.$refs.gridlayout.dragEvent(
+            "dragstart",
+            "drop",
+            new_pos.x,
+            new_pos.y,
+            1,
+            1
+          );
+          DragPos.i = String(index);
+          DragPos.x = this.layout[index].x;
+          DragPos.y = this.layout[index].y;
+        }
+        if (mouseInGrid === false) {
+          this.$refs.gridlayout.dragEvent(
+            "dragend",
+            "drop",
+            new_pos.x,
+            new_pos.y,
+            1,
+            1
+          );
+          this.layout = this.layout.filter((obj) => obj.i !== "drop");
+        }
+      }
+    },
+    dragend: function (item) {
+      let parentRect = document
+        .getElementById("wrapper")
+        .getBoundingClientRect();
+      let mouseInGrid = false;
+      if (
+        mouseXY.x > parentRect.left &&
+        mouseXY.x < parentRect.right &&
+        mouseXY.y > parentRect.top &&
+        mouseXY.y < parentRect.bottom
+      ) {
+        mouseInGrid = true;
+      }
+      if (mouseInGrid === true) {
+        this.$refs.gridlayout.dragEvent(
+          "dragend",
+          "drop",
+          DragPos.x,
+          DragPos.y,
+          1,
+          1
+        );
+        this.layout = this.layout.filter((obj) => obj.i !== "drop");
+        this.layout.push({
+          x: DragPos.x,
+          y: DragPos.y,
+          w: 5,
+          h: 10,
+          i: DragPos.i,
+          code: item.code,
+        });
+        this.$refs.gridLayout.dragEvent(
+          "dragend",
+          DragPos.i,
+          DragPos.x,
+          DragPos.y,
+          1,
+          1
+        );
+      }
     },
   },
   computed: {
@@ -154,7 +290,7 @@ export default {
     // display: flex;
     // align-items: center;
     // justify-content: center;
-    // background: yellow;
+    background: yellow;
     width: 100%;
     height: 100%;
     border: 1px solid;
@@ -170,5 +306,16 @@ export default {
   position: absolute;
   width: 100%;
   border-top: 1px dashed #c3cbdd;
+}
+.panal-list {
+  position: fixed;
+  height: 200px;
+  width: 300px;
+  right: 100px;
+  top: 200px;
+  list-style: none;
+  li {
+    margin-bottom: 10px;
+  }
 }
 </style>

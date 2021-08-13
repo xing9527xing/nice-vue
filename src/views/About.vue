@@ -24,7 +24,6 @@
             :i="item.i"
             :key="item.i"
           >
-            <!-- <div class="item-content">{{item.code}}-{{item.i}}</div> -->
             <component class="item-content" v-bind:is="item.code"></component>
           </grid-item>
         </grid-layout>
