@@ -1,32 +1,49 @@
 <template>
-  <div>
+  <div style="height: 3000px">
     <div style="position: fixed; top: 10px; left: 100px; z-index: 2">
       <button @click="saveLayout">保存</button>
-    </div>
-    <div id="wrapper" class="wrapper">
-      <div
-        style="width: 100%; height: 100%; position: reletive; left: 0; top: 0"
+      <el-select
+        @change="calc"
+        allow-create
+        filterable
+        v-model="config.screenSize"
+        size="mini"
       >
+        <el-option label="3840*1080" value="3840*1080"> </el-option>
+        <el-option label="1920*1080" value="1920*1080"> </el-option>
+        <el-option label="1280*1024" value="1280*1024"> </el-option>
+        <el-option label="1366*768" value="1366*768"> </el-option>
+      </el-select>
+    </div>
+    <div
+      ref="wrapper"
+      id="wrapper"
+      class="wrapper"
+      :style="{ width: wrapperWidth + 'px', height: wrapperHeight + 'px' }"
+    >
+      <!-- 背景网格 -->
+      <div class="background-grid">
         <div
-          v-for="i in colNum"
+          v-for="i in config.colNum - 1"
           :key="i"
-          :style="{ left: i * 32 + 'px' }"
+          :style="{ left: (i * wrapperWidth) / config.colNum + 'px' }"
           class="bb"
         ></div>
         <div
-          v-for="i in maxRows"
-          :key="i + colNum"
-          :style="{ top: i * rowHeight + 'px' }"
+          v-for="i in config.maxRows - 1"
+          :key="i + config.colNum"
+          :style="{ top: i * config.rowHeight + 'px' }"
           class="aa"
         ></div>
       </div>
+      <!-- grid布局 -->
       <grid-layout
         id="kk"
         ref="gridlayout"
         :layout.sync="layout"
-        :col-num="colNum"
-        :row-height="rowHeight"
-        :max-rows="maxRows"
+        :col-num="config.colNum"
+        :row-height="config.rowHeight"
+        :max-rows="config.maxRows"
         :is-draggable="true"
         :is-mirrored="false"
         :is-resizable="true"
@@ -78,35 +95,30 @@
 
 <script>
 import VueGridLayout from "vue-grid-layout";
-import _ from "lodash";
 import safe from "@/components/layoutComponents/safe.vue";
 import construction from "@/components/layoutComponents/construction.vue";
-const wrapperH = 720;
 
 let mouseXY = { x: null, y: null };
 let DragPos = { x: null, y: null, w: 1, h: 1, i: null };
-// const wrapperW = 960
 export default {
   data() {
     return {
+      config: {
+        screenSize: "1920*1080", // 用户选定屏幕分辨率(尺寸)
+        rowHeight: 10,
+        maxRows: 72,
+        colNum: 80,
+      },
       layout: [
-        // { code: "safe", h: 44, i: "0", moved: false, w: 18, x: 13, y: 15 },
-        // { code: "construction", h: 27, i: "1", moved: false, w: 6, x: 5, y: 6 },
-        // { h: 27, i: "1", moved: false, w: 6, x: 5, y: 6 },
-        // { h: 27, i: "2", moved: false, w: 6, x: 5, y: 6 },
-        // { h: 27, i: "3", moved: false, w: 6, x: 5, y: 6 },
-        // { h: 27, i: "4", moved: false, w: 6, x: 5, y: 6 },
+        {x: 0,y: 0,w: 30,h: 20,i:1},
+        {x: 10,y: 0,w: 20,h: 40,i:2},
       ],
       series: [
         { code: "safe", name: "安全", image: 2 },
         { code: "construction", name: "施工", image: 1 },
       ],
-      lastLayout: "",
-      rowHeight: 10,
-      maxRows: 72,
-      layoutCopy: [],
-      colNum: 40,
-      dragingItem: {},
+      wrapperWidth: 1280,
+      wrapperHeight: 720,
     };
   },
   components: {
@@ -116,8 +128,7 @@ export default {
     construction,
   },
   mounted() {
-    // this.maxRows = 540 / this.rowHeight
-    this.layoutCopy = _.cloneDeep(this.layout);
+    // this.calc()
     document.addEventListener(
       "dragover",
       function (e) {
@@ -128,30 +139,32 @@ export default {
     );
   },
   methods: {
-    layoutUpdatedEvent() {
-      // console.log('layoutUpdatedEventlayoutUpdatedEvent');
+    calc() {
+      const a = this.config.screenSize.split("*");
+      this.wrapperHeight =
+        Math.floor((a[1] * this.wrapperWidth) / a[0] / 10) * 10;
+      this.$refs.wrapper.style.height = this.wrapperHeight + "px";
+      this.config.maxRows = Math.floor(
+        this.wrapperHeight / this.config.rowHeight
+      );
     },
+    // 保存布局
     saveLayout() {
       const height = document.querySelector("#kk").offsetHeight;
-      if (height > wrapperH) {
-        // this.layout = _.cloneDeep(this.layoutCopy);
+      if (height > this.wrapperHeight) {
         this.$message("内容不可超出边框区域");
       } else {
-        this.layoutCopy = _.cloneDeep(this.layout);
         console.log("不超出");
         localStorage.setItem("layout", JSON.stringify(this.layout));
+        localStorage.setItem(
+          "layoutConfig",
+          JSON.stringify({
+            layout: this.layout,
+            baseConfig: { ...this.config,wrapperWidth: this.wrapperWidth,wrapperHeight: this.wrapperHeight },
+          })
+        );
       }
     },
-    // resizedEvent() {
-    //   const height = document.querySelector("#kk").offsetHeight;
-    //   if (height > wrapperH) {
-    //     this.layout = _.cloneDeep(this.layoutCopy);
-    //     console.log('超出');
-    //   } else {
-    //     this.layoutCopy = _.cloneDeep(this.layout);
-    //     console.log('不超出');
-    //   }
-    // },
     drag: function (item) {
       let parentRect = document
         .getElementById("wrapper")
@@ -170,10 +183,10 @@ export default {
         this.layout.findIndex((item) => item.i === "drop") === -1
       ) {
         this.layout.push({
-          x: (this.layout.length * 2) % (this.colNum || 12),
-          y: this.layout.length + (this.colNum || 12), // puts it at the bottom
-          w: 5,
-          h: 10,
+          x: (this.layout.length * 2) % (this.config.colNum || 12),
+          y: this.layout.length + (this.config.colNum || 12), // puts it at the bottom
+          w: 20,
+          h: 30,
           i: "drop",
           code: item.code,
         });
@@ -241,8 +254,8 @@ export default {
         this.layout.push({
           x: DragPos.x,
           y: DragPos.y,
-          w: 5,
-          h: 10,
+          w: 20,
+          h: 30,
           i: DragPos.i,
           code: item.code,
         });
@@ -267,15 +280,13 @@ export default {
 
 <style lang="scss">
 #wrapper {
-  width: 1280px;
-  height: 720px;
   z-index: 1;
   border: 1px solid #ccc;
   position: absolute;
   top: 100px;
   left: 100px;
   transform-origin: left top;
-  overflow: hidden;
+  overflow: visible;
 }
 #kk {
   position: absolute;
@@ -287,13 +298,10 @@ export default {
 .vue-grid-item {
   box-sizing: border-box;
   .item-content {
-    // display: flex;
-    // align-items: center;
-    // justify-content: center;
     background: yellow;
     width: 100%;
     height: 100%;
-    border: 1px solid;
+    box-sizing: border-box;
   }
 }
 .bb {
@@ -317,5 +325,12 @@ export default {
   li {
     margin-bottom: 10px;
   }
+}
+.background-grid {
+  width: 100%;
+  height: 100%;
+  position: reletive;
+  left: 0;
+  top: 0;
 }
 </style>
