@@ -57,6 +57,8 @@
           :y="item.y"
           :w="item.w"
           :h="item.h"
+          :minW="item.minW"
+          :minH="item.minH"
           :i="item.i"
           :key="item.i"
         >
@@ -107,15 +109,21 @@ export default {
         screenSize: "1920*1080", // 用户选定屏幕分辨率(尺寸)
         rowHeight: 10,
         maxRows: 72,
-        colNum: 80,
+        colNum: 192, // screenSize[0] / 10
       },
       layout: [
-        {x: 0,y: 0,w: 30,h: 20,i:1},
-        {x: 10,y: 0,w: 20,h: 40,i:2},
+        { x: 0, y: 0, w: 1, h: 5, i: 1,minW: 20,minH: 5 },
+        // { x: 10, y: 0, w: 20, h: 40, i: 2 },
       ],
       series: [
-        { code: "safe", name: "安全", image: 2 },
-        { code: "construction", name: "施工", image: 1 },
+        { code: "safe", name: "安全", image: 2, minWidth: 480, minHeight: 200 },
+        {
+          code: "construction",
+          name: "施工",
+          image: 1,
+          minWidth: 500,
+          minHeight: 200,
+        },
       ],
       wrapperWidth: 1280,
       wrapperHeight: 720,
@@ -128,7 +136,7 @@ export default {
     construction,
   },
   mounted() {
-    // this.calc()
+    this.calc()
     document.addEventListener(
       "dragover",
       function (e) {
@@ -147,6 +155,16 @@ export default {
       this.config.maxRows = Math.floor(
         this.wrapperHeight / this.config.rowHeight
       );
+      this.series.forEach((serie) => {
+        serie.minW = Math.ceil(
+          serie.minWidth /
+            (this.config.screenSize.split("*")[0] / this.config.colNum)
+        );
+        serie.minH = Math.ceil(
+          serie.minHeight /
+            (this.config.screenSize.split("*")[1] / this.config.maxRows)
+        );
+      });
     },
     // 保存布局
     saveLayout() {
@@ -160,7 +178,11 @@ export default {
           "layoutConfig",
           JSON.stringify({
             layout: this.layout,
-            baseConfig: { ...this.config,wrapperWidth: this.wrapperWidth,wrapperHeight: this.wrapperHeight },
+            baseConfig: {
+              ...this.config,
+              wrapperWidth: this.wrapperWidth,
+              wrapperHeight: this.wrapperHeight,
+            },
           })
         );
       }
@@ -185,8 +207,10 @@ export default {
         this.layout.push({
           x: (this.layout.length * 2) % (this.config.colNum || 12),
           y: this.layout.length + (this.config.colNum || 12), // puts it at the bottom
-          w: 20,
-          h: 30,
+          w: item.minW,
+          h: item.minH,
+          minW: item.minW,
+          minH: item.minH,
           i: "drop",
           code: item.code,
         });
@@ -254,8 +278,10 @@ export default {
         this.layout.push({
           x: DragPos.x,
           y: DragPos.y,
-          w: 20,
-          h: 30,
+          w: item.minW,
+          h: item.minH,
+          minW: item.minW,
+          minH: item.minH,
           i: DragPos.i,
           code: item.code,
         });

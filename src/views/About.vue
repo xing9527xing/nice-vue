@@ -17,7 +17,7 @@
           <grid-item
             v-for="item in layout"
             :x="item.x"
-            :y="item.y"
+            :y="item.y" 
             :w="item.w"
             :h="item.h"
             :i="item.i"
