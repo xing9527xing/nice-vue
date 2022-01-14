@@ -1,16 +1,18 @@
 import Vue from 'vue'
 import App from './App.vue'
-import router from './router'
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
-import ECharts from 'vue-echarts'
-import 'echarts'
+// 引入svgIcon
 Vue.config.productionTip = false
-
+import './styles/theme.scss'
+import 'xe-utils'
+import VXETable from 'vxe-table'
+import 'vxe-table/lib/style.css'
+import store from './store/index.js'
+Vue.use(VXETable)
 // 全局注册组件（也可以使用局部注册）
-Vue.component('v-chart', ECharts)
 Vue.use(ElementUI)
 new Vue({
-  router,
-  render: h => h(App)
+  render: h => h(App),
+  store
 }).$mount('#app')

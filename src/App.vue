@@ -1,45 +1,46 @@
 <template>
-  <div id="app">
-    <router-view />
+  <div id="haha">
+    <!-- <A v-bind="company"></A> -->
+    {{ company.name }}-{{ company.age }}-{{ company.ha }}
+    <button @click="getBadgeValue">12312</button>
   </div>
 </template>
 
 <script>
+// import A from "./A.vue";
+import Vue from 'vue'
 export default {
+  name: "App",
+  // components: { A },
   data() {
     return {
-      width: 300,
-      options: {
-        title: {
-          text: "ECharts 入门示例",
-        },
-        tooltip: {},
-        xAxis: {
-          data: ["衬衫", "羊毛衫", "雪纺衫", "裤子", "高跟鞋", "袜子"],
-        },
-        yAxis: {},
-        series: [
-          {
-            name: "销量",
-            type: "bar",
-            data: [5, 20, 36, 10, 10, 40],
-          },
-        ],
+      company: {
+        name: "jintu",
+        age: 20,
       },
+      comName: "",
     };
+  },
+  methods: {
+    me() {
+      this.company.name = "123";
+      this.$nextTick(()=>{
+        Vue.set(this.company,'ha','haha')
+      })
+      setTimeout(() => {
+        this.company.ha = "xixix";
+      }, 3000);
+    },
+    getBadgeValue() {
+      const xtable = this.$refs.xTable
+      return xtable ? (xtable.getInsertRecords().length + xtable.getUpdateRecords().length) : 0
+    }
+  },
+  mounted() {
+    console.log(this.company === this.$data.company);
   },
 };
 </script>
 
-<style lang="scss">
-html,
-body,
-#app {
-  padding: 0;
-  margin: 0;
-  height: 100%;
-}
-.vue-grid-item {
-  background: oldlace;
-}
+<style scoped lang="scss">
 </style>
