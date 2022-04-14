@@ -10,6 +10,14 @@ function resolve(dir) {
 }
 
 module.exports = {
+  devServer: {
+    proxy: {
+      '/Api': {
+        target: 'https://jzt3.hnjtjt.com/', // 远程办公测试服务器
+        changeOrigin: true, // 开启跨域
+      },
+    },
+  },
   chainWebpack: config => {
     config.module.rule('svg').exclude.add(resolve('src/icons')).end()
     config.module
